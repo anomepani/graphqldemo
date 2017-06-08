@@ -20,17 +20,41 @@ rollDice(numDice: Int!, numSides: Int): [Int]
     Use an exclamation point to indicate a type cannot be nullable, so String! is a non-nullable string.
     To use a list type, surround the type in square brackets, so [Int] is a list of integers.
  */
+// Add new object type in schema
 var basicTypeSchema = buildSchema(`
+type RandomDie{
+    numSides:Int!,
+    rollOnce:Int!,
+    roll(numRolls:Int!):[Int]
+}
   type Query {
     quoteOfTheDay: String
     random: Float!
     rollThreeDice: [Int],
     hello: String,
     name: String,
-rollDice(numDice: Int!, numSides: Int): [Int]
+rollDice(numDice: Int!, numSides: Int): [Int],
+getDie(numSides:Int): RandomDie
   
   }
 `);
+// This class implements the RandomDie GraphQL type
+class RandomDie{
+    constructor(numSides){
+        this.numSides=numSides;
+    }
+    rollOnce(){
+        return 1+Math.floor(Math.random()*this.numSides);
+    }
+    roll({numRolls}) {
+    var output = [];
+    for (var i = 0; i < numRolls; i++) {
+      output.push(this.rollOnce());
+    }
+    return output;
+  }
+}
+
 // // Created new query who accept dynamic paramter or variable
 // var rollDiceSchema = buildSchema(`
 // type Query {
@@ -75,6 +99,9 @@ var basicTypeRoot = {
       output.push(1 + Math.floor(Math.random() * (numSides || 6)));
     }
     return output;
+  },
+  getDie: function ({numSides}) {
+    return new RandomDie(numSides || 6);
   }
 };
 // Commented below code and added express server code to execute graphql query
