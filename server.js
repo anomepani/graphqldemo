@@ -27,6 +27,22 @@ type RandomDie{
     rollOnce:Int!,
     roll(numRolls:Int!):[Int]
 }
+
+ input MessageInput {
+    content: String
+    author: String
+  }
+
+  type Message {
+    id: ID!
+    content: String
+    author: String
+  }
+  type Mutation {
+    createMessage(input: MessageInput): Message
+    updateMessage(id: ID!, input: MessageInput): Message
+  }
+
   type Query {
     quoteOfTheDay: String
     random: Float!
@@ -34,7 +50,9 @@ type RandomDie{
     hello: String,
     name: String,
 rollDice(numDice: Int!, numSides: Int): [Int],
-getDie(numSides:Int): RandomDie
+getDie(numSides:Int): RandomDie,
+ getMessageOld: String,
+ getMessage(id: ID!): Message
   
   }
 `);
@@ -62,6 +80,16 @@ class RandomDie{
 
 // }`);
 
+// If Message had any complex fields, we'd put them on this object.
+class Message {
+  constructor(id, {content, author}) {
+    this.id = id;
+    this.content = content;
+    this.author = author;
+  }
+}
+// Created fakeDatabase object to test Mutation in graphql
+var fakeDatabase={};
 //console.log(schema);
 // The root provides a resolver function for each API endpoint
 // Added rollDice function or property to resolve with dynamic value
@@ -102,7 +130,35 @@ var basicTypeRoot = {
   },
   getDie: function ({numSides}) {
     return new RandomDie(numSides || 6);
-  }
+  },
+  setMessage: function ({message}) {
+    fakeDatabase.message = message;
+    return message;
+  },
+  getMessage: function () {
+    return fakeDatabase.message;
+  },
+   getMessageOld: function ({id}) {
+    if (!fakeDatabase[id]) {
+      throw new Error('no message exists with id ' + id);
+    }
+    return new Message(id, fakeDatabase[id]);
+  },
+  createMessage: function ({input}) {
+    // Create a random id for our "database".
+    var id = require('crypto').randomBytes(10).toString('hex');
+
+    fakeDatabase[id] = input;
+    return new Message(id, input);
+  },
+  updateMessage: function ({id, input}) {
+    if (!fakeDatabase[id]) {
+      throw new Error('no message exists with id ' + id);
+    }
+    // This replaces all old data, but some apps might want partial update.
+    fakeDatabase[id] = input;
+    return new Message(id, input);
+  },
 };
 // Commented below code and added express server code to execute graphql query
 // // Run the GraphQL query '{ hello }' and print out the response
